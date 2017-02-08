@@ -6,6 +6,8 @@ import java.awt.*;
 import org.openkinect.processing.*;
 Kinect kinect;
 
+//GITHUB TEST
+
 //Capture video;
 OpenCV opencv;
 
