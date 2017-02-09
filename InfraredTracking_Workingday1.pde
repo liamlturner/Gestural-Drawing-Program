@@ -11,6 +11,13 @@ Kinect kinect;
 //Capture video;
 OpenCV opencv;
 
+//int[] oldLoc = new int[2];
+
+int oldX = 0;
+int oldY = 0;
+
+PGraphics doodoo;
+
 void setup() {
   size(640, 480);
   // Capture opens up the image (/2) at half the size; tracking works faster
@@ -19,7 +26,7 @@ void setup() {
   //don't need this line; just slot in the video import from Kinect
   
  // video = new Capture(this, 640/2, 480/2);
-  opencv = new OpenCV(this, 640/2, 480/2);
+  opencv = new OpenCV(this, 640, 480);
   //opencv.loadCascade(OpenCV.CASCADE_FRONTALFACE);  
 
   // One concern from Matti is whether Kinect images get automatically converted to grayscale
@@ -29,12 +36,16 @@ void setup() {
   kinect.initDepth();
   //kinect.initVideo();
   kinect.enableIR(true);
+  frameRate(10);
 
 //  video.start();
+
+//DRAWING
+  doodoo = createGraphics(width,height, g.getClass().getName());
 }
 
 void draw() {
-  scale(2);
+  //scale(2);
   
   // we should replace this line with the get Kinect video 
   //opencv.loadImage(kinect.getVideoImage()); perhaps
@@ -45,21 +56,38 @@ void draw() {
   image(opencv.getOutput(), 0, 0); 
   PVector loc = opencv.max();
   
-  stroke(255, 0, 0);
-  strokeWeight(4);
-  noFill();
-  ellipse(loc.x, loc.y, 10, 10);
+  print("Current Location: ");
+  print(int(loc.x));
+  print(" , ");
+  println(int(loc.y));
+  
+  //stroke(255, 0, 0);
+  //strokeWeight(4);
+  //noFill();
+  //ellipse(loc.x, loc.y, 10, 10);
+  
+  doodoo.beginDraw();
+  //doodoo.background(100);
+  doodoo.stroke(0,255,0);
+  doodoo.strokeWeight(4);
+  doodoo.ellipse(loc.x, loc.y, 10, 10);
+  doodoo.line(loc.x,loc.y,oldX,oldY);
+  doodoo.endDraw();
+  image(doodoo,0,0);
+  print("Old location:     ");
+  print(oldX);
+  print(" , ");
+  println(oldY);
+  
+  
+  //SAVING OLD LOCATION
+  //oldLoc[0] = int(loc.x);
+  //oldLoc[1] = int(loc.y);
+  
+  oldX = int(loc.x);
+  oldY = int(loc.y);
+  
 
-  /* noFill();
-  stroke(0, 255, 0);
-  strokeWeight(3);
-  Rectangle[] faces = opencv.detect();
-  println(faces.length);
-
-  for (int i = 0; i < faces.length; i++) {
-    println(faces[i].x + "," + faces[i].y);
-    rect(faces[i].x, faces[i].y, faces[i].width, faces[i].height);
-  } */
 }
 
 void captureEvent(Capture c) {
