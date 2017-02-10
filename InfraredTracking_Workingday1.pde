@@ -1,6 +1,7 @@
 import gab.opencv.*;
 import processing.video.*;
 import java.awt.*;
+Capture cam;
 
 //KINECT addtions
 import org.openkinect.processing.*;
@@ -20,13 +21,23 @@ int irBright;
 PGraphics artboard;
 
 void setup() {
-  size(640, 480);
-  // Capture opens up the image (/2) at half the size; tracking works faster
-  // With the Kinect we might not be able to scale it by half
-  // we can figure it out when working with it
-  //don't need this line; just slot in the video import from Kinect
-
-  // video = new Capture(this, 640/2, 480/2);
+  fullScreen(2);
+  background(50);
+  //size(1280, 960);
+  
+  String[] cameras = Capture.list();
+  
+  //video capture
+  // The camera can be initialized directly using an element
+  // from the array returned by list():
+  cam = new Capture(this, cameras[0]);
+  // Or, the settings can be defined based on the text in the list
+  //cam = new Capture(this, 640, 480, "Built-in iSight", 30);
+  
+  // Start capturing the images from the camera
+  cam.start();
+  
+  
   opencv = new OpenCV(this, 640, 480);
   //opencv.loadCascade(OpenCV.CASCADE_FRONTALFACE);  
 
@@ -35,9 +46,8 @@ void setup() {
   //KINECT ADDITIONS
   kinect = new Kinect(this);
   kinect.initDepth();
-  //kinect.initVideo();
   kinect.enableIR(true);
-  frameRate(120);
+  kinect.enableMirror(true);
 
   //  video.start();
  
@@ -46,12 +56,19 @@ void setup() {
 }
 
 void draw() {
- 
+  scale(2);
   opencv.loadImage(kinect.getVideoImage());
-  opencv.threshold(70);
-  filter(BLUR, 6);
+  opencv.brightness(22);
+  //opencv.contrast(2);
+  opencv.threshold(200);
   
-  // image(video, 0, 0 );
+  //old threshold 200 (for bright LED)
+
+  //camera
+  if (cam.available() == true) {
+    cam.read();
+  }
+
 
   image(opencv.getOutput(), 0, 0); 
   PVector loc = opencv.max();
@@ -64,34 +81,33 @@ void draw() {
 
   
   
-
+/*
   print("Current Location: ");
   print(int(loc.x));
   print(" , ");
   println(int(loc.y));
-
-  //stroke(255, 0, 0);
-  //strokeWeight(4);
-  //noFill();
-  //ellipse(loc.x, loc.y, 10, 10);
-
+*/
 
 //if (irBright > 100) {
   artboard.beginDraw();
-    artboard.stroke(0, 255, 0);
+  
+  if (loc.x != 0 && loc.y != 0) {
+    //artboard.stroke(0, 255, 0);
+    int test = image(cam, loc.x, loc.y, 100, 45);
     artboard.strokeWeight(2);
     //artboard.ellipse(loc.x, loc.y, 10, 10);
     artboard.line(loc.x, loc.y, oldX, oldY);
+  }
   artboard.endDraw(); 
 //}
   image(artboard, 0, 0);
 
-
+/*
   print("Old location:     ");
   print(oldX);
   print(" , ");
   println(oldY);
-
+*/
 
   oldX = int(loc.x);
   oldY = int(loc.y);
