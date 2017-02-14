@@ -93,7 +93,7 @@ void draw() {
   
   if (loc.x != 0 && loc.y != 0) {
     //artboard.stroke(0, 255, 0);
-    int test = image(cam, loc.x, loc.y, 100, 45);
+    image(cam, loc.x, loc.y);
     artboard.strokeWeight(2);
     //artboard.ellipse(loc.x, loc.y, 10, 10);
     artboard.line(loc.x, loc.y, oldX, oldY);
