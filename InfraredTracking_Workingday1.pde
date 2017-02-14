@@ -7,27 +7,27 @@ Capture cam;
 import org.openkinect.processing.*;
 Kinect kinect;
 
-//GITHUB TEST
 
 //Capture video;
 OpenCV opencv;
 
-//int[] oldLoc = new int[2];
 
 int oldX = 0;
 int oldY = 0;
-int irBright;
 
 PGraphics artboard;
+PImage img;
 
 void setup() {
+  //size(1920, 1200);
   fullScreen(2);
   background(50);
-  //size(1280, 960);
+ 
+  img = loadImage("spaceship copy.png");
   
   String[] cameras = Capture.list();
-  
-  //video capture
+  printArray(cameras);
+  //VIDEO CAPTURE
   // The camera can be initialized directly using an element
   // from the array returned by list():
   cam = new Capture(this, cameras[0]);
@@ -39,9 +39,7 @@ void setup() {
   
   
   opencv = new OpenCV(this, 640, 480);
-  //opencv.loadCascade(OpenCV.CASCADE_FRONTALFACE);  
 
-  // One concern from Matti is whether Kinect images get automatically converted to grayscale
 
   //KINECT ADDITIONS
   kinect = new Kinect(this);
@@ -56,11 +54,11 @@ void setup() {
 }
 
 void draw() {
-  scale(2);
+  //scale(0.5);
   opencv.loadImage(kinect.getVideoImage());
-  opencv.brightness(22);
+  //opencv.brightness(22);
   //opencv.contrast(2);
-  opencv.threshold(200);
+  opencv.threshold(250);
   
   //old threshold 200 (for bright LED)
 
@@ -70,9 +68,18 @@ void draw() {
   }
 
 
-  image(opencv.getOutput(), 0, 0); 
+  //image(opencv.getOutput(), 0, 0); 
   PVector loc = opencv.max();
-  
+  PVector locMapped = new PVector();
+  locMapped.x = map(loc.x,91,550,0,width);
+  locMapped.y = map(loc.y,20,308,0,height);
+  //ellipse(locMapped.x,locMapped.y,10,10);
+  //image(cam, locMapped.x, locMapped.y, 100, 45);
+  //println("Coordinates: " + loc.x,loc.y);
+  //Top left: 91,20
+  //Top right: 550, 7
+  //bottom right: 572, 293
+  //bottom left: 86, 308
   
   //button
   fill(200);
@@ -88,19 +95,27 @@ void draw() {
   println(int(loc.y));
 */
 
+  
+
 //if (irBright > 100) {
   artboard.beginDraw();
   
-  if (loc.x != 0 && loc.y != 0) {
+  if (locMapped.x != 0 && locMapped.y != 0) {
+    //background(0);
+    image(cam, locMapped.x, locMapped.y, 100, 45);
+    //image(img, loc.x, loc.y, 100,100);    
+    
+ 
+    
     //artboard.stroke(0, 255, 0);
-    image(cam, loc.x, loc.y);
-    artboard.strokeWeight(2);
-    //artboard.ellipse(loc.x, loc.y, 10, 10);
-    artboard.line(loc.x, loc.y, oldX, oldY);
+    //artboard.strokeWeight(2);
+    //artboard.line(loc.x, loc.y, oldX, oldY);
   }
   artboard.endDraw(); 
 //}
   image(artboard, 0, 0);
+  
+  
 
 /*
   print("Old location:     ");
