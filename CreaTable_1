@@ -1,0 +1,306 @@
+import gab.opencv.*;
+import processing.video.*;
+import java.awt.*;
+import blobDetection.*;
+import org.openkinect.processing.*;
+Capture webcam;
+
+//KINECT additions
+Kinect kinect;
+
+//OPENCV Video capture
+OpenCV opencv;
+
+//Declaring integers to save old and new values of the iR location so we can draw a line between them
+int oldX = 0;
+int oldY = 0;
+
+//This part sets up the "artboard" which we'll be drawing on.
+PGraphics artboard;
+
+//BLOB Detection
+BlobDetection theBlobDetection;
+PImage test;
+boolean newFrame=false;
+boolean drawBlobs=false;
+boolean drawEdges=false;
+
+PVector loc = new PVector();
+
+void setup() {
+  //size(1920, 1200); //sets the sketch to run full size on a rMBP
+  fullScreen(2); //Launches the sketch in fullscreen on the auxillary screen (projector)
+  //background(255); // Sets the background color
+
+  // this part begins the camera capture from OpenCV (I think?)
+  String[] cameras = Capture.list();
+  printArray(cameras);
+
+  //VIDEO CAPTURE
+  // The camera can be initialized directly using an element
+  // from the array returned by list():
+  //the following initializes the first camera (index[0])
+  webcam = new Capture(this, cameras[15]);
+
+  //START the camera
+  webcam.start();
+
+  //Opens up and sets the capturing OpenCV is doing
+  opencv = new OpenCV(this, 640, 480);
+
+  //KINECT Setup
+  kinect = new Kinect(this);
+  kinect.initDepth();
+  kinect.enableIR(true);
+  kinect.enableMirror(true);
+
+  //DRAWING setup
+  artboard = createGraphics(width, height, g.getClass().getName());
+
+  test = new PImage(128, 96);
+  theBlobDetection = new BlobDetection(test.width, test.height);
+  theBlobDetection.setPosDiscrimination(true);
+  theBlobDetection.setThreshold(0.2f);
+} // end of setup
+
+void draw() {
+
+  //Gets the image from the Kinect and gives it to OpenCV to analyze
+  PImage kinectV = kinect.getVideoImage();
+  opencv.loadImage(kinectV);
+
+  //image(webcam, 640, 0);
+
+  //Sets the THRESHOLD limiting to detect the brightest spot. A higher number = less sensitive sensor
+  opencv.threshold(250); 
+
+  //Uses camera only if one is connected
+  if (webcam.available() == true) {
+    webcam.read();
+  }
+
+  if (newFrame) {
+    newFrame=false;
+    //image(kinectV, 0, 0);
+    test.copy(kinectV, 0, 0, kinectV.width, kinectV.height, 
+      0, 0, test.width, test.height);
+    fastblur(test, 2);
+    theBlobDetection.computeBlobs(test.pixels);
+    //drawBlobsAndEdges(true, true);
+  }
+  
+  Blob b;
+  EdgeVertex eA, eB;
+  for (int n=0; n<theBlobDetection.getBlobNb(); n++)
+  {
+    b=theBlobDetection.getBlob(n);
+    if (b!=null)
+    {
+    loc.x = b.xMin;
+    loc.y = b.yMin;
+    
+    
+      // Blobs
+      if (drawBlobs)
+      {
+        strokeWeight(1);
+        stroke(255, 0, 0);
+        rect(
+          b.xMin*width, b.yMin*height, 
+          b.w*width, b.h*height
+          );
+      }
+    }
+  }
+  //The following line gets the location of the iR light (brightest spot)
+  // This is the MVP of the code
+  //PVector loc = opencv.max();
+
+
+  //The following section is the CALIBRATION SETTINGS for the screen and the ir Tracker (kinect)
+  PVector locMapped = new PVector(); 
+  //The following lines are essentially setting the corners of the code within the Kinect's range
+  locMapped.x = map(loc.x, 0.034595186, 0.86662657, 0, width);
+  locMapped.y = map(loc.y, 0.09289474, 0.76965, 0, height);
+  println(locMapped.x + ", " + locMapped.y);
+  //NEW AGAIN
+  //top left: 52, 0
+  //top right: 570, 6
+  //bottom right: 628, 317
+  //bottom left: 1, 319
+  //println(loc.x + ", " + loc.y);
+  
+  //NEWEST
+   //top left: 0.062992126, 0.073684216
+  //top right: 0.86735314, 0.112105265
+  //bottom right: 0.9259, 0.7655
+  //bottom left: 0.006200371, 0.7738
+  
+   //top left: 0.06824147, 0.06824147
+  //top right: 0.87007874, 0.87007874
+  //bottom right: 0.9259, 0.9261
+  //bottom left: 0.008800371, 0.008800371
+  //println(loc.x + ", " + loc.y);
+
+
+  //DRAWING based on light location
+  //Opens drawing
+  artboard.beginDraw();
+
+
+  //This makes sure the location isn't null; needs some work
+  //Also added statement to reserve the left-most 100 pixels for the UI
+
+
+  //This places the webcam image at the location of the iR light!
+  rectMode(CENTER);
+  image(webcam, locMapped.x, locMapped.y, 212, 160);
+
+
+  color t = (color(0, 0, 0, 0));
+
+
+  loadPixels();
+  for (int px = 0; px < width; px++) {
+    for (int py = 0; py < height; py++) {
+
+      color cR = int(red(get(px, py)));
+      color cG = int(green(get(px, py)));
+      color cB = int(blue(get(px, py)));
+
+
+
+      //GREEN Threshold
+      if (cG > (cR *1.1)) {
+        set(px, py, t);
+      }
+
+      //WHITE threshold
+      if (cR > 180 && cG > 180 && cB > 180) {
+        set(px, py, t);
+      }
+    }
+  }
+
+
+
+  //Closes drawing
+  artboard.endDraw();
+
+  //DISPLAY what we're drawing
+  image(artboard, 0, 0);
+
+  // DRAW KINECT IMAGE 
+  //image(kinectV, 0, 0);
+
+  //Enters UI
+  //if (locMapped.x > 0 && locMapped.x < 100) {
+  //  fill(255, 0, 0);
+  //  rect(5, 5, 80, 80);
+
+  //  fill(0, 255, 0);
+  //  rect(5, 100, 80, 80);
+
+  //  fill(0, 0, 255);
+  //  rect(5, 200, 80, 80);
+  //}
+
+
+
+
+  //SAVE the current X and Y so that when draw starts over we know where to draw _from_
+  oldX = int(loc.x);
+  oldY = int(loc.y);
+
+  //Not sure what this does...
+}// ends draw
+void captureEvent(Capture testCam) {
+  testCam.read();
+  newFrame = true;
+} 
+
+
+
+
+void fastblur(PImage img, int radius)
+{
+  if (radius<1) {
+    return;
+  }
+  int w=img.width;
+  int h=img.height;
+  int wm=w-1;
+  int hm=h-1;
+  int wh=w*h;
+  int div=radius+radius+1;
+  int r[]=new int[wh];
+  int g[]=new int[wh];
+  int b[]=new int[wh];
+  int rsum, gsum, bsum, x, y, i, p, p1, p2, yp, yi, yw;
+  int vmin[] = new int[max(w, h)];
+  int vmax[] = new int[max(w, h)];
+  int[] pix=img.pixels;
+  int dv[]=new int[256*div];
+  for (i=0; i<256*div; i++) {
+    dv[i]=(i/div);
+  }
+
+  yw=yi=0;
+
+  for (y=0; y<h; y++) {
+    rsum=gsum=bsum=0;
+    for (i=-radius; i<=radius; i++) {
+      p=pix[yi+min(wm, max(i, 0))];
+      rsum+=(p & 0xff0000)>>16;
+      gsum+=(p & 0x00ff00)>>8;
+      bsum+= p & 0x0000ff;
+    }
+    for (x=0; x<w; x++) {
+
+      r[yi]=dv[rsum];
+      g[yi]=dv[gsum];
+      b[yi]=dv[bsum];
+
+      if (y==0) {
+        vmin[x]=min(x+radius+1, wm);
+        vmax[x]=max(x-radius, 0);
+      }
+      p1=pix[yw+vmin[x]];
+      p2=pix[yw+vmax[x]];
+
+      rsum+=((p1 & 0xff0000)-(p2 & 0xff0000))>>16;
+      gsum+=((p1 & 0x00ff00)-(p2 & 0x00ff00))>>8;
+      bsum+= (p1 & 0x0000ff)-(p2 & 0x0000ff);
+      yi++;
+    }
+    yw+=w;
+  }
+
+  for (x=0; x<w; x++) {
+    rsum=gsum=bsum=0;
+    yp=-radius*w;
+    for (i=-radius; i<=radius; i++) {
+      yi=max(0, yp)+x;
+      rsum+=r[yi];
+      gsum+=g[yi];
+      bsum+=b[yi];
+      yp+=w;
+    }
+    yi=x;
+    for (y=0; y<h; y++) {
+      pix[yi]=0xff000000 | (dv[rsum]<<16) | (dv[gsum]<<8) | dv[bsum];
+      if (x==0) {
+        vmin[y]=min(y+radius+1, hm)*w;
+        vmax[y]=max(y-radius, 0)*w;
+      }
+      p1=x+vmin[y];
+      p2=x+vmax[y];
+
+      rsum+=r[p1]-r[p2];
+      gsum+=g[p1]-g[p2];
+      bsum+=b[p1]-b[p2];
+
+      yi+=w;
+    }
+  }
+}
